@@ -3,7 +3,7 @@
     {
       "glb": "glass1",
       "posx": -0.26,
-      "posy": -0.1,
+      "posy": -0.05,
       "posz": -0.5,
       "scalex": 0.565,
       "scaley": 0.52,
@@ -15,7 +15,7 @@
     {
       "glb": "glass2",
       "posx": -0.001,
-      "posy": 0,
+      "posy": 0.04,
       "posz": -0.126,
       "scalex": 0.042,
       "scaley": 0.042,
@@ -27,7 +27,7 @@
     {
       "glb": "wayfarer_frame",
       "posx": -0.006,
-      "posy": -0.091,
+      "posy": -0.04,
       "posz": -0.078,
       "scalex": 0.43,
       "scaley": 0.42,
