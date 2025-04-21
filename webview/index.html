@@ -2,81 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unity to Web View Communication</title>
+    <title>Unity WebView Test</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
-        }
-        .container {
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
+            font-size: 18px;
         }
         input, button {
-            width: 100%;
+            font-size: 18px;
             padding: 10px;
             margin: 10px 0;
-            font-size: 16px;
+            width: 90%;
         }
-        .message-box {
+        #messages {
             margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            word-break: break-word;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Send a message to Unity</h2>
-        
-        <label for="msgType">Message Type:</label>
-        <input type="text" id="msgType" placeholder="Enter message type (e.g. VUPLEX_INIT)" />
-        
-        <label for="msgInput">Message:</label>
-        <input type="text" id="msgInput" placeholder="Enter your message here" />
-        
-        <button onclick="sendMessage()">Send to Unity</button>
-        
-        <div class="message-box">
-            <h3>Messages from Unity:</h3>
-            <div id="messages"></div>
-        </div>
-    </div>
+
+    <h2>Send Message to Unity Demo</h2>
+    <input type="text" id="msgType" placeholder="Enter type (e.g., INIT)">
+    <input type="text" id="msgInput" placeholder="Enter message (e.g., Hello from JS)">
+    <button onclick="sendMessage()">Send to Unity</button>
+
+    <h2>Message from Unity</h2>
+    <div id="messages">Waiting for message...</div>
 
     <script>
         function sendMessage() {
-            const msg = document.getElementById('msgInput').value;
             const type = document.getElementById('msgType').value;
-            const jsonMessage = JSON.stringify({
-                type: type,
-                message: msg
-            });
+            const message = document.getElementById('msgInput').value;
 
-            if (window.vuplex) {
-                window.vuplex.postMessage(jsonMessage);
-                console.log('Sent to Unity:', jsonMessage);
+            const payload = {
+                type: type,
+                message: message
+            };
+
+            const json = JSON.stringify(payload);
+
+            if (window.vuplex && window.vuplex.postMessage) {
+                window.vuplex.postMessage(json);
+                console.log('[Web] Sent to Unity:', json);
             } else {
-                alert('Vuplex is not available.');
+                alert('Vuplex is not ready. Cannot send message.');
             }
         }
 
-        // Setup Vuplex listener
-        if (window.vuplex) {
-            window.vuplex.ready().then(() => {
-                window.vuplex.addEventListener('message', function(event) {
-                    try {
-                        const data = JSON.parse(event.data);
-                        const receivedMessage = `Type: ${data.type}<br>Message: ${data.message}`;
-                        document.getElementById('messages').innerHTML = receivedMessage;
-                        console.log("Received message from Unity:", data);
-                    } catch (e) {
-                        console.error("Failed to parse message from Unity", e);
-                    }
-                });
-            });
-        } else {
-            console.warn("Vuplex not ready yet.");
-        }
+        // ✅ Correct way to receive message from Unity
+        window.addEventListener('vuplexmessage', event => {
+            try {
+                const data = JSON.parse(event.value);
+                const msg = `Type: ${data.type}<br>Message: ${data.message}`;
+                document.getElementById('messages').innerHTML = msg;
+                alert(`Received from Unity\nType: ${data.type}\nMessage: ${data.message}`);
+                console.log('[Web] Received from Unity:', data);
+            } catch (e) {
+                console.error('[Web] Failed to parse message from Unity', e);
+            }
+        });
     </script>
+
 </body>
 </html>
