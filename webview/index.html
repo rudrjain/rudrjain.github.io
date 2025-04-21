@@ -1,46 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Vuplex Communication Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity to Web View Communication</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            font-size: 1.5em;
             padding: 20px;
-            background-color: #f0f0f0;
         }
-
-        input, button {
-            font-size: 1.2em;
-            padding: 10px;
-            margin-top: 10px;
-            width: 100%;
-        }
-
         .container {
-            max-width: 400px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
         }
-
-        label {
-            margin-top: 10px;
-            display: block;
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .message-box {
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Send Message to Unity</h2>
-        <label>Type:</label>
-        <input id="msgType" type="text" placeholder="Enter message type" />
-        <label>Message:</label>
-        <input id="msgInput" type="text" placeholder="Enter your message" />
+        <h2>Send a message to Unity</h2>
+        
+        <label for="msgType">Message Type:</label>
+        <input type="text" id="msgType" placeholder="Enter message type (e.g. VUPLEX_INIT)" />
+        
+        <label for="msgInput">Message:</label>
+        <input type="text" id="msgInput" placeholder="Enter your message here" />
+        
         <button onclick="sendMessage()">Send to Unity</button>
+        
+        <div class="message-box">
+            <h3>Messages from Unity:</h3>
+            <div id="messages"></div>
+        </div>
     </div>
 
     <script>
@@ -60,16 +60,23 @@
             }
         }
 
-        // Listen for messages from Unity
-        window.addEventListener('message', function(event) {
-            try {
-                const data = JSON.parse(event.data);
-                alert("Received from Unity:\nType: " + data.type + "\nMessage: " + data.message);
-                console.log("Message from Unity:", data);
-            } catch (e) {
-                console.warn("Failed to parse message from Unity", e);
-            }
-        });
+        // Setup Vuplex listener
+        if (window.vuplex) {
+            window.vuplex.ready().then(() => {
+                window.vuplex.addEventListener('message', function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        const receivedMessage = `Type: ${data.type}<br>Message: ${data.message}`;
+                        document.getElementById('messages').innerHTML = receivedMessage;
+                        console.log("Received message from Unity:", data);
+                    } catch (e) {
+                        console.error("Failed to parse message from Unity", e);
+                    }
+                });
+            });
+        } else {
+            console.warn("Vuplex not ready yet.");
+        }
     </script>
 </body>
 </html>
