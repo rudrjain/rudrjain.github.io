@@ -1,96 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Vuplex Test Page</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      margin: 0;
-      background-color: #f2f2f2;
-      color: #333;
-    }
+    <meta charset="UTF-8">
+    <title>Vuplex Communication Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 1.5em;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
 
-    h2 {
-      text-align: center;
-      font-size: 28px;
-    }
+        input, button {
+            font-size: 1.2em;
+            padding: 10px;
+            margin-top: 10px;
+            width: 100%;
+        }
 
-    label {
-      display: block;
-      margin-top: 20px;
-      font-size: 18px;
-    }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
 
-    input {
-      width: 100%;
-      padding: 12px;
-      font-size: 18px;
-      margin-top: 8px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      font-size: 20px;
-      margin-top: 25px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    p {
-      font-size: 18px;
-      margin-top: 30px;
-      word-break: break-word;
-    }
-  </style>
-
-  <script>
-    // Listen for messages from Unity
-    window.addEventListener('message', function (event) {
-      if (event.data && event.data.type === 'fromUnity') {
-        document.getElementById('fromUnity').textContent = 'Unity says: ' + event.data.message;
-      }
-    });
-
-    function sendToUnity() {
-      const type = document.getElementById('msgType').value;
-      const msg = document.getElementById('userInput').value;
-
-      const messageObject = {
-        type: type,
-        message: msg
-      };
-
-      if (window.vuplex) {
-        window.vuplex.postMessage(JSON.stringify(messageObject));
-      } else {
-        console.warn('Vuplex not available.');
-      }
-    }
-  </script>
+        label {
+            margin-top: 10px;
+            display: block;
+        }
+    </style>
 </head>
 <body>
-  <h2>Vuplex ↔ Unity Test</h2>
+    <div class="container">
+        <h2>Send Message to Unity</h2>
+        <label>Type:</label>
+        <input id="msgType" type="text" placeholder="Enter message type" />
+        <label>Message:</label>
+        <input id="msgInput" type="text" placeholder="Enter your message" />
+        <button onclick="sendMessage()">Send to Unity</button>
+    </div>
 
-  <label for="msgType">Message Type:</label>
-  <input id="msgType" placeholder="e.g. ECHO or DEBUG" />
+    <script>
+        function sendMessage() {
+            const msg = document.getElementById('msgInput').value;
+            const type = document.getElementById('msgType').value;
+            const jsonMessage = JSON.stringify({
+                type: type,
+                message: msg
+            });
 
-  <label for="userInput">Message:</label>
-  <input id="userInput" placeholder="Type your message..." />
+            if (window.vuplex) {
+                window.vuplex.postMessage(jsonMessage);
+                console.log('Sent to Unity:', jsonMessage);
+            } else {
+                alert('Vuplex is not available.');
+            }
+        }
 
-  <button onclick="sendToUnity()">Send to Unity</button>
-
-  <p id="fromUnity">Waiting for Unity message...</p>
+        // Listen for messages from Unity
+        window.addEventListener('message', function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                alert("Received from Unity:\nType: " + data.type + "\nMessage: " + data.message);
+                console.log("Message from Unity:", data);
+            } catch (e) {
+                console.warn("Failed to parse message from Unity", e);
+            }
+        });
+    </script>
 </body>
 </html>
