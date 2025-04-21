@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vuplex Test Page</title>
+  <script>
+    // 1. Listen for messages FROM Unity
+    window.addEventListener('message', function (event) {
+      if (event.data && event.data.type === 'fromUnity') {
+        const message = event.data.message;
+        document.getElementById('fromUnity').textContent = 'Message from Unity: ' + message;
+      }
+    });
+
+    // 2. Send message TO Unity (via Vuplex)
+    function sendToUnity() {
+      const input = document.getElementById('userInput').value;
+      if (window.vuplex) {
+        window.vuplex.postMessage({ type: 'fromWeb', data: input });
+      } else {
+        console.warn('Vuplex not available.');
+      }
+    }
+  </script>
+</head>
+<body>
+  <h2>Vuplex Communication Test</h2>
+  <input id="userInput" placeholder="Type something..." />
+  <button onclick="sendToUnity()">Send to Unity</button>
+  <p id="fromUnity">Message from Unity will appear here.</p>
+</body>
+</html>
