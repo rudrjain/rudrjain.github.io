@@ -2,20 +2,78 @@
 <html>
 <head>
   <title>Vuplex Test Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+      background-color: #f2f2f2;
+      color: #333;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 28px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 18px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 20px;
+      margin-top: 25px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    p {
+      font-size: 18px;
+      margin-top: 30px;
+      word-break: break-word;
+    }
+  </style>
+
   <script>
-    // 1. Listen for messages FROM Unity
+    // Listen for messages from Unity
     window.addEventListener('message', function (event) {
       if (event.data && event.data.type === 'fromUnity') {
-        const message = event.data.message;
-        document.getElementById('fromUnity').textContent = 'Message from Unity: ' + message;
+        document.getElementById('fromUnity').textContent = 'Unity says: ' + event.data.message;
       }
     });
 
-    // 2. Send message TO Unity (via Vuplex)
     function sendToUnity() {
-      const input = document.getElementById('userInput').value;
+      const type = document.getElementById('msgType').value;
+      const msg = document.getElementById('userInput').value;
+
+      const messageObject = {
+        type: type,
+        message: msg
+      };
+
       if (window.vuplex) {
-        window.vuplex.postMessage({ type: 'fromWeb', data: input });
+        window.vuplex.postMessage(JSON.stringify(messageObject));
       } else {
         console.warn('Vuplex not available.');
       }
@@ -23,9 +81,16 @@
   </script>
 </head>
 <body>
-  <h2>Vuplex Communication Test</h2>
-  <input id="userInput" placeholder="Type something..." />
+  <h2>Vuplex ↔ Unity Test</h2>
+
+  <label for="msgType">Message Type:</label>
+  <input id="msgType" placeholder="e.g. ECHO or DEBUG" />
+
+  <label for="userInput">Message:</label>
+  <input id="userInput" placeholder="Type your message..." />
+
   <button onclick="sendToUnity()">Send to Unity</button>
-  <p id="fromUnity">Message from Unity will appear here.</p>
+
+  <p id="fromUnity">Waiting for Unity message...</p>
 </body>
 </html>
