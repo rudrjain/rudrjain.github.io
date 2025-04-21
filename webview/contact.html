@@ -27,8 +27,31 @@
 </head>
 <body>
 
-    <h2>Send Message to Unity Demo 2</h2>
-    
+    <h2>Contact Page</h2>
+    <br>
+    <a href="https://rudrjain.github.io/webview/index.html">GO Back</a>
+
+    <script>if (window.vuplex) {
+        addMessageListener();
+    } else {
+        window.addEventListener('vuplexready', addMessageListener);
+    }
+
+    function addMessageListener() {
+        window.vuplex.addEventListener('message', event => {
+            let json = event.data;
+            console.log('[Web] JSON received from Unity:', json);
+            try {
+                const data = JSON.parse(json);
+                const msg = `Type: ${data.type}<br>Message: ${data.message}`;
+                document.getElementById('messages').innerHTML = msg;
+                alert(`Received from Unity\nType: ${data.type}\nMessage: ${data.message}`);
+            } catch (e) {
+                console.error('[Web] Failed to parse message from Unity', e);
+            }
+        });
+    }
+</script>
 
 </body>
 </html>
