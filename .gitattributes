@@ -1,0 +1,2 @@
+/Edifyer/Admin/Build/webglBuild.data filter=lfs diff=lfs merge=lfs -text
+/Edifyer/EndUser/Build/EndUser.data filter=lfs diff=lfs merge=lfs -text
