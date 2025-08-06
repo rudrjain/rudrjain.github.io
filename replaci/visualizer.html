@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Redirect mobile devices -->
+  <script>
+    if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|BlackBerry/i.test(navigator.userAgent)) {
+      window.location.href = "mobile.html";
+    }
+  </script>
+
+  <!-- Auth check -->
+  <script type="module">
+    import { API_BASE } from './js/config.js';
+    const token = localStorage.getItem('token');
+
+    async function validateToken() {
+      if (!token) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/validate`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.valid) throw new Error('Invalid token');
+      } catch (err) {
+        console.error('Token validation failed:', err);
+        localStorage.removeItem('token');
+        window.location.href = 'index.html';
+      }
+    }
+
+    await validateToken();
+  </script>
+
+  <meta charset="UTF-8" />
+  <title>Replaci Visualizer</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: black; }
+    canvas { display: block; }
+
+    #ui {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      background-color: #333;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      border-radius: 6px;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    #rotation-ui {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    #rotation-ui label {
+      color: white;
+    }
+
+    #rotation-ui input {
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="button-group" id="modelButtons"></div>
+    <div class="button-group" id="textureButtons"></div>
+  </div>
+
+  <div id="rotation-ui">
+    <div style="color: white; margin-bottom: 5px;">Rotate Model (Degrees)</div>
+    <label>Pitch (X): <input id="rotateX" type="range" min="-180" max="180" value="0"></label><br>
+    <label>Yaw (Y): <input id="rotateY" type="range" min="-180" max="180" value="0"></label><br>
+    <label>Roll (Z): <input id="rotateZ" type="range" min="-180" max="180" value="0"></label>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'https://esm.sh/three@0.158.0';
+    import { GLTFLoader } from 'https://esm.sh/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'https://esm.sh/three@0.158.0/examples/jsm/controls/OrbitControls.js';
+    import { EffectComposer } from 'https://esm.sh/three@0.158.0/examples/jsm/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'https://esm.sh/three@0.158.0/examples/jsm/postprocessing/RenderPass.js';
+    import { ShaderPass } from 'https://esm.sh/three@0.158.0/examples/jsm/postprocessing/ShaderPass.js';
+    import { FXAAShader } from 'https://esm.sh/three@0.158.0/examples/jsm/shaders/FXAAShader.js';
+    import { VignetteShader } from 'https://esm.sh/three@0.158.0/examples/jsm/shaders/VignetteShader.js';
+
+    let scene, camera, renderer, composer, controls, loader, currentModel;
+    let currentModelKey = 'sofa';
+
+    const modelConfig = {
+      sofa: {
+        label: "Sofa",
+        file: "sofa.glb",
+        rotation: [0, 0, 0],
+        position: [0, 0, 0]
+      },
+      table: {
+        label: "Table",
+        file: "table.glb",
+        rotation: [0, 0, 0],
+        position: [0, -0.4, 0]
+      }
+    };
+
+    init();
+    animate();
+
+    function init() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x888888);
+
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 0, 4);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.1;
+      controls.enablePan = true;
+      controls.enableZoom = true;
+      controls.target.set(0, 0, 0);
+      controls.update();
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 2);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+      directionalLight.position.set(5, 10, 7);
+      scene.add(directionalLight);
+
+      const cubeTextureLoader = new THREE.CubeTextureLoader();
+      const envMap = cubeTextureLoader.load([
+        './assets/envmap/px.png',
+        './assets/envmap/nx.png',
+        './assets/envmap/py.png',
+        './assets/envmap/ny.png',
+        './assets/envmap/pz.png',
+        './assets/envmap/nz.png',
+      ]);
+      scene.environment = envMap;
+
+      loader = new GLTFLoader();
+
+      composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+
+      const fxaaPass = new ShaderPass(FXAAShader);
+      fxaaPass.material.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+      composer.addPass(fxaaPass);
+
+      const vignettePass = new ShaderPass(VignetteShader);
+      vignettePass.uniforms['offset'].value = 1.0;
+      vignettePass.uniforms['darkness'].value = 1;
+      composer.addPass(vignettePass);
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
+        fxaaPass.material.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+      });
+
+      const modelUI = document.getElementById('modelButtons');
+      Object.entries(modelConfig).forEach(([key, config]) => {
+        const btn = document.createElement('button');
+        btn.innerText = config.label;
+        btn.onclick = () => {
+          currentModelKey = key;
+          loadModel(key);
+        };
+        modelUI.appendChild(btn);
+      });
+
+      const textureUI = document.getElementById('textureButtons');
+      for (let i = 1; i <= 4; i++) {
+        const btn = document.createElement('button');
+        btn.innerText = `Variant ${i}`;
+        btn.onclick = () => applyTextureVariant(i);
+        textureUI.appendChild(btn);
+      }
+
+      loadModel(currentModelKey);
+      setupRotationControls();
+    }
+
+    function loadModel(key) {
+      const { file, rotation, position } = modelConfig[key];
+
+      if (currentModel) {
+        scene.remove(currentModel);
+        currentModel.traverse((child) => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+            else child.material.dispose();
+          }
+        });
+      }
+
+      loader.load(`./assets/${file}`, (gltf) => {
+        currentModel = gltf.scene;
+
+        const box = new THREE.Box3().setFromObject(currentModel);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+
+        currentModel.position.sub(center);
+        currentModel.rotation.set(...rotation);
+        currentModel.position.add(new THREE.Vector3(...position));
+
+        scene.add(currentModel);
+
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const distance = maxDim * 1.5;
+        camera.position.set(0, 0, distance);
+        camera.lookAt(0, 0, 0);
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        // Reset sliders
+        document.getElementById('rotateX').value = 0;
+        document.getElementById('rotateY').value = 0;
+        document.getElementById('rotateZ').value = 0;
+      }, undefined, (err) => {
+        console.error(`Failed to load model ${file}:`, err);
+      });
+    }
+
+    function applyTextureVariant(index) {
+      const texturePath = `./assets/textures/${currentModelKey}/${currentModelKey}_${index}.png`;
+      const loader = new THREE.TextureLoader();
+
+      loader.load(texturePath, (newTexture) => {
+        newTexture.flipY = false;
+        currentModel.traverse((child) => {
+          if (child.isMesh && child.material) {
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            materials.forEach((mat) => {
+              if (mat.map && mat.map.image) {
+                mat.map.image = newTexture.image;
+                mat.map.needsUpdate = true;
+              }
+            });
+          }
+        });
+      });
+    }
+
+    function setupRotationControls() {
+      const rotateX = document.getElementById('rotateX');
+      const rotateY = document.getElementById('rotateY');
+      const rotateZ = document.getElementById('rotateZ');
+
+      const updateRotation = () => {
+        if (currentModel) {
+          currentModel.rotation.x = THREE.MathUtils.degToRad(parseFloat(rotateX.value));
+          currentModel.rotation.y = THREE.MathUtils.degToRad(parseFloat(rotateY.value));
+          currentModel.rotation.z = THREE.MathUtils.degToRad(parseFloat(rotateZ.value));
+        }
+      };
+
+      rotateX.addEventListener('input', updateRotation);
+      rotateY.addEventListener('input', updateRotation);
+      rotateZ.addEventListener('input', updateRotation);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      composer.render();
+    }
+  </script>
+</body>
+</html>

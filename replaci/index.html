@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head><script>
+  if (/Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|BlackBerry/i.test(navigator.userAgent)) {
+    window.location.href = "mobile.html";
+  }
+</script>
+  <title>Login | Replaci</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module" src="js/auth.js" defer></script>
+</head>
+<body>
+  <div id="mobile-blocker">Please open this site on a desktop browser.</div>
+
+<div id="login-container">
+  <h2>Login</h2>
+  <form id="loginForm">
+    <input type="email" id="loginEmail" placeholder="Email" required autocomplete="email" />
+    <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password" />
+    <button type="submit">Login</button>
+    <div id="loginMessage" class="message"></div>
+    <div class="spinner" id="loginSpinner" style="display:none;"></div>
+  </form>
+
+  <hr>
+
+  <h2>Signup</h2>
+  <form id="registerForm">
+    <input type="email" id="registerEmail" placeholder="Email" required autocomplete="email" />
+    <input type="password" id="registerPassword" placeholder="Password" required autocomplete="new-password" />
+    <button type="submit">Register</button>
+    <div id="registerMessage" class="message"></div>
+    <div class="spinner" id="registerSpinner" style="display:none;"></div>
+  </form>
+</div>
+
+</body>
+</html>
