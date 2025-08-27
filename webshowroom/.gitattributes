@@ -1,1 +1,2 @@
 3dmodels/showroom_1.glb filter=lfs diff=lfs merge=lfs -text
+showroom_1.zip filter=lfs diff=lfs merge=lfs -text
